@@ -55,6 +55,13 @@ class Instrument(InstrumentBase):
             self.r_cset(f"S{i+1}VG", gap)
 
 
+class InterInstrument(Instrument):
+    """
+    INTER Instrument class with methods specific to driving
+    the INTER beamline
+    """
+
+
 class PolrefInstrument(Instrument):
     """
     POLREF Instrument class with methods specific to driving
@@ -83,3 +90,31 @@ class PolrefInstrument(Instrument):
                 self.r_cset(f"S{i + 1}HG", gap)
             else:
                 self.r_cset(f"S{i + 1}VG", gap)
+
+
+# TODO: Include a better way of passing multiple variables
+#  which could be RunAngle type specific, to the instrument
+#  instantiaion. **kwargs may be best in conjunction
+#  with hasattr statements
+def initialise_instrument(dry_run):
+    """
+    Grabs instrument from IBEX (using the config?)
+    and instantiates correct instrument class.
+
+    If instrument is unknown (or we do not have a class written for it yet)
+    it will default to generic Instrument class
+    """
+
+    # below grabs the instrument name from the pv so IN:POLREF: would return POLREF
+    instrument_name = g.my_pv_prefix.split(":")[1]
+
+    # TODO: the if statement below can be done more cleanly
+    #  - need to look into this
+    if instrument_name == "INTER":
+        instrument = InterInstrument(dry_run=dry_run)
+    elif instrument_name == "POLREF":
+        instrument = PolrefInstrument(dry_run=dry_run)
+    else:
+        instrument = Instrument(dry_run=dry_run)
+
+    return instrument

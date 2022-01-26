@@ -91,12 +91,62 @@ class PolrefInstrument(Instrument):
             else:
                 self.r_cset(f"S{i + 1}VG", gap)
 
+    def flipper(self, state, flipper_settings=None):
+        """
+        Sets flipper to desired settings and state
+        """
+
+        # TODO: don't want these hard coded here. We should pull them from a local
+        #  file on the POLREF instrument - maybe placed in "inst" scripts
+        #  Look to open a .json with values placed in it.
+        default_ops = dict(amp_p=3.5,
+                           comp_p=1.023,
+                           const_p=0.0298,
+                           dt_p=-3250,
+                           file_p=None,
+                           amp_a=3.5,
+                           comp_a=1.234,
+                           const_a=0.042,
+                           dt_a=-3250,
+                           file_a=None)
+
+        if flipper_settings is not None:
+            for k in default_ops.keys():
+                default_ops[k] = flipper_settings.get(k, default_ops[k])
+        else:
+            flipper_settings = default_ops
+
+        self.r_cset(b.Polariser_Amp, flipper_settings["amp_p"])
+
+        # see polref base_routines for setting flipper state
+        # below is just for representation
+        self.r_cset(b.Flipper_State, state)
+
+    def hardperiods_pnr(self, uframes=1, dframes=1):
+        """
+        Set the hardware periods for pnr mode
+        Args:
+            uframes: Pol flipper off frame count
+            dframes: Pol flipper on frame count
+        """
+
+        pass
+
+    def pnr_refl_init(self, uframes=None, dframes=None):
+        """
+        Initialises POLREF for PNR experiment
+        """
+
+        self.flipper("dd")
+        self.hardperiods_pnr(uframes, dframes)
+        pass
+
 
 # TODO: Include a better way of passing multiple variables
 #  which could be RunAngle type specific, to the instrument
 #  instantiaion. **kwargs may be best in conjunction
 #  with hasattr statements
-def initialise_instrument(dry_run):
+def init_instrument(dry_run):
     """
     Grabs instrument from IBEX (using the config?)
     and instantiates correct instrument class.

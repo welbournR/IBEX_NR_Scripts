@@ -7,6 +7,9 @@ from genie_python import genie as g
 
 
 # Create an abstract base instrument class
+# TODO: We should think about what methods we require to make a bare bones
+#  Instrument. Then these should be included in the base class, which will act as
+#  a blue print for creating all of the Instrument classes.
 class InstrumentBase:
     """
     Abstract Base class for instrument specific methods.
@@ -23,9 +26,15 @@ class InstrumentBase:
         """
         pass
 
-    def set_beamwidth_gaps(self):
+    def set_beamwidth_gaps(self, gap_settings):
         """
         Sets the slit gaps in the beam width direction - i.e. perpendicular to Qz
+        """
+        pass
+
+    def set_s3(self):
+        """
+        Sets S3 dependent on if being used as slit or beam blocker
         """
         pass
 
@@ -54,6 +63,14 @@ class Instrument(InstrumentBase):
         for i, gap in enumerate(gap_settings):
             self.r_cset(f"S{i+1}VG", gap)
 
+    def set_beamwidth_gaps(self, gap_settings):
+        """
+        Sets the slit gaps in the beam width direction - i.e. perpendicular to Qz
+        """
+
+        for i, gap in enumerate(gap_settings):
+            self.r_cset(f"S{i+1}HG", gap)
+
 
 class InterInstrument(Instrument):
     """
@@ -62,7 +79,33 @@ class InterInstrument(Instrument):
     """
 
 
-class PolrefInstrument(Instrument):
+# TODO: We should have a generic Polarised Instrument class
+#  that inherits from InstrumentBase and be used as the base for
+#  POLREF, CRISP and OFFSPEC
+class PolarisedInstrumentBase(InstrumentBase):
+    """
+    Abstract Base class for a Polarised instrument.
+    This inherits from :InstrumentBase: and adds
+    Polarised beamline specific methods
+    """
+
+    def flipper(self, state, flipper_settings=None):
+        """
+        Methods required to drive the flipper state
+        """
+        pass
+
+
+# TODO: go through current POLREF instrument scripts and build the
+#  fully functioning PolrefInstrument. From here it will hopefully become
+#  more apparent what methods may be required for every Instrument and
+#  what are purely PolarisedInstrument specific
+# TODO: Here I have played about with subclassing both the generic
+#  NR instrument and the PolarisedInstrumentBase - seems to work.
+#  If there are generic methods that can be shared between
+#  Polarised instruments, then we should create a generic
+#  PolarisedInstrument and subclass that instead.
+class PolrefInstrument(Instrument, PolarisedInstrumentBase):
     """
     POLREF Instrument class with methods specific to driving
     the POLREF beamline

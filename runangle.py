@@ -63,6 +63,8 @@ class RunAngleSL(RunAngleBase):
         pass
         
 
+# TODO: add a hasattr check on PolarisedInstrument methods
+#  It should fail if trying to be used on a non-polarised instrument
 class RunAnglePNR(RunAngleBase):
     """
     Polarised NR Experiment class

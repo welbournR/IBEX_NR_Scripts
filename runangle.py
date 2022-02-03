@@ -17,9 +17,14 @@ class RunAngleBase:
     """
 
     # This is just a representative example and is not complete
-    def __init__(self, col_slits, width_slits, angle, sample, dry_run=False):
-        self.instrument = init_instrument(dry_run)
+    def __init__(self, col_slits, width_slits, sample, angle=None, dry_run=False, instrument=None):
+
+        self.instrument = init_instrument(dry_run, manual_instrument_override=instrument)
+        # TODO: make this optional - i.e. if not supplied it should work this out from
+        #  the resolution calculator
         self.col_slits = col_slits
+        self.width_slits = width_slits
+        self.sample = sample
 
     def transmission(self):
         """
@@ -27,7 +32,7 @@ class RunAngleBase:
         """
         pass
 
-    def run_angle(self):
+    def run_angle(self, angle):
         """
         run an NR measurement at a given angle
         """
@@ -39,13 +44,22 @@ class RunAngle(RunAngleBase):
     Most basic form of NR experiment
     """
 
-    def run_angle(self):
+    def run_angle(self, angle):
         """
         Run NR experiment at a given angle
         """
 
         # set the collimation slits
         self.instrument.set_collimation_gaps(self.col_slits)
+
+    def transmission(self):
+        """
+        Run NR transmission
+        """
+
+        # for demo purposes print something to check the work flow
+
+        print("Running Transmission")
 
 
 # TODO: Do we want to set up RunAngle with all the methods generic to all
@@ -55,7 +69,7 @@ class RunAngleSL(RunAngleBase):
     Solid-Liquid Experiment Class
     """
 
-    def run_angle(self):
+    def run_angle(self, angle):
         """
         Run NR experiment for a Solid-Liquid cell at a given angle
         """

@@ -189,17 +189,23 @@ class PolrefInstrument(Instrument, PolarisedInstrumentBase):
 #  which could be RunAngle type specific, to the instrument
 #  instantiaion. **kwargs may be best in conjunction
 #  with hasattr statements
-def init_instrument(dry_run):
+def init_instrument(dry_run, manual_instrument_override=None):
     """
     Grabs instrument from IBEX (using the config?)
     and instantiates correct instrument class.
 
     If instrument is unknown (or we do not have a class written for it yet)
     it will default to generic Instrument class
+
+    if :manual_instrument_override: is used then the instrument name supplied here
+    will be used to define the instrument.
     """
 
     # below grabs the instrument name from the pv so IN:POLREF: would return POLREF
-    instrument_name = g.my_pv_prefix.split(":")[1]
+    if manual_instrument_override is None:
+        instrument_name = g.my_pv_prefix.split(":")[1]
+    else:
+        instrument_name = manual_instrument_override
 
     # TODO: the if statement below can be done more cleanly
     #  - need to look into this

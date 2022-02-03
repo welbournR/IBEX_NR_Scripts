@@ -46,7 +46,11 @@ sample_1_measure = ra.RunAngle(col_slits=col_slits, width_slits=width_slits, sam
 # if we want to remove the "." we can hook a name to the method
 run_sample_1 = sample_1_measure.run_angle
 sample_1_transmission = sample_1_measure.transmission
-# transmission - currently no optional arguments just for demo purposes
-sample_1_transmission()
-# theta = 0.5
-run_sample_1(angle=0.5)
+
+
+# create function so IBEX knows when to start the script
+def run_script():
+    # transmission - currently no optional arguments just for demo purposes
+    sample_1_transmission()
+    # theta = 0.5
+    run_sample_1(angle=0.5)

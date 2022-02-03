@@ -8,7 +8,7 @@ RunAnglePA = Polarised NR with Analysis - Air Solid
 
 """
 
-from instrument import init_instrument
+from refl_instrument import init_instrument
 
 
 class RunAngleBase:

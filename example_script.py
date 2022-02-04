@@ -40,7 +40,7 @@ sample_2 = samp.SampleGenerator(**sample_2_info)
 #  at the moment it expects a list, in order, of S1, S2, S3 etc.
 col_slits = [0.5, 0.25, 5]
 width_slits = [40, 30, 30]
-# TODO: we need to decide how we want RunAngle to be
+# TODO: we need to decide how we want RunAngle to be used
 # run a measurement - this can just be set at the start of the script
 sample_1_measure = ra.RunAngle(col_slits=col_slits, width_slits=width_slits, sample=sample_1)
 # if we want to remove the "." we can hook a name to the method

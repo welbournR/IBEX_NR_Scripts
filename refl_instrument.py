@@ -4,6 +4,7 @@ which can then be used by RunAngle - for example:
 set_s3 method can be called but will work differently for say POLREF or INTER
 """
 from genie_python import genie as g
+from instrument_constants import get_instrument_constants
 
 
 # Create an abstract base instrument class
@@ -19,6 +20,7 @@ class InstrumentBase:
         # TODO: is there any other things we need to pull in upon instantiating
         #  the instrument class?
         self.dry_run = dry_run
+        self.inst_constants = get_instrument_constants()
 
     def set_collimation_gaps(self, gap_settings):
         """

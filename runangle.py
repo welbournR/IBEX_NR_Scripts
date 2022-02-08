@@ -124,21 +124,22 @@ class RunAngleBase:
 
         slit_settings = {}
 
-        if self.col_slits and self.lowest_angle is not None:
+        if (self.col_slits is not None) and (self.lowest_angle is not None):
             for slit in self.instrument.slit_aliases.keys():
+                # find the max and min limits on the slit openings
+                maximum_opening = self.instrument.max_slit_gaps[slit]
+                minimum_opening = self.instrument.min_slit_gaps[slit]
+
                 if hasattr(self.col_slits[slit], "__len__"):
-                    # find the max and min limits on the slit openings
-                    # divide by 2 as this is to set the slit blade not the gap
-                    maximum_opening = self.instrument.max_slit_gaps[slit]/2
-                    minimum_opening = self.instrument.min_slit_gaps[slit]/2
                     slit_list = []
                     for slit_value in self.col_slits[slit]:
+                        # divide max/min by 2 as this is to set the slit blade not the gap
                         slit_list.append(self._scale_slit(angle, slit, slit_value,
-                                                          minimum_opening, maximum_opening))
+                                                          minimum_opening/2, maximum_opening/2))
                     slit_settings[slit] = slit_list
                 else:
-                    # TODO: add in for slit gap operation
-                    pass
+                    slit_settings[slit] = self._scale_slit(angle, slit, self.col_slits[slit],
+                                                           minimum_opening, maximum_opening)
 
         if self.footprint is None:
             footprint = self.sample.footprint
@@ -148,7 +149,7 @@ class RunAngleBase:
         # sample_length = self.sample.sample_length
         # TODO: finish writing slit calculator
         # TODO: should return at least first two collimation slits e.g. S1 S2
-        return self.col_slits
+        return slit_settings
 
     def _divergence_calc(self, a1, a2, x):
         """

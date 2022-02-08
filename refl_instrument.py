@@ -34,9 +34,11 @@ class InstrumentBase:
         """
         pass
 
-    def set_s3(self):
+    def set_beam_blocker(self, scale_beam_blocker_blade=False):
         """
-        Sets S3 dependent on if being used as slit or beam blocker
+        Sets beam blocker slit (typically S3) dependent on beamline geometry
+
+        This should drive one slit blade while the other could be wide open.
         """
         pass
 
@@ -48,6 +50,23 @@ class InstrumentBase:
         if not self.dry_run:
             g.cset(block, block_value)
 
+    def begin_and_end_run(self, wait_for="uamps"):
+        """
+        Begins a run, waits for: uamps, seconds or frames.
+        Ends run.
+        """
+        pass
+
+    # def _scale_slits(self, angle, lowest_angle, slits):
+    #     """
+    #     Takes a list/dict (we need to decide on this) of slit settings
+    #     and scales them based on the angle to be measured and the lowest angle used.
+    #
+    #     Being an Instrument method, it can scale the slits while including limits
+    #     on the maximum opening of the gaps - or if individual blades are being driven -
+    #     the blade opening value (and for vertical, the direction)
+    #     """
+
 
 # Base instrument class including methods that can be shared between all beamlines
 class Instrument(InstrumentBase):
@@ -56,6 +75,18 @@ class Instrument(InstrumentBase):
     between all beamlines
     e.g. this could be slit calculators, setting software periods etc.
     """
+    # set instrument defaults
+    SLIT_ALIASES = None
+    DEFAULT_SLIT_WIDTHS = None
+    DEFAULT_DISABLE_SLIT_SCALE_SETTINGS = None
+    # Defines dict of slits and if they are designated as a beam blocker or not.
+    # If defined as a beam blocker slit, when values are provided to drive both
+    # blades, the set_beam_blocker() method will be called on those slits.
+    DEFAULT_BEAM_BLOCKER_SLITS = None
+
+    def __init__(self, dry_run):
+        super().__init__(dry_run=dry_run)
+        self.default_slit_widths = self.DEFAULT_SLIT_WIDTHS
 
     def set_collimation_gaps(self, gap_settings):
         """
@@ -79,6 +110,11 @@ class InterInstrument(Instrument):
     INTER Instrument class with methods specific to driving
     the INTER beamline
     """
+
+    # set instrument defaults
+    SLIT_ALIASES = dict(S1="S1", S2="S2", S3="S3", S4="S4")
+    DEFAULT_SLIT_WIDTHS = dict(S1=40, S2=30, S3=30, S4=40)
+    DEFAULT_DISABLE_SLIT_SCALE_SETTINGS = dict(S1=False, S2=False, S3=False, S4=False)
 
 
 # TODO: We should have a generic Polarised Instrument class
@@ -113,10 +149,35 @@ class PolrefInstrument(Instrument, PolarisedInstrumentBase):
     the POLREF beamline
     """
 
-    def __init__(self, dry_run):
-        super().__init__(dry_run)
+    # defining some instrument defaults
+    SLIT_ALIASES = dict(S1="S1", S2="S2", S3="S3")
+    DEFAULT_SLIT_WIDTHS = dict(S1=40, S2=30, S3=30)
+    DEFAULT_DISABLE_SLIT_SCALE_SETTINGS = dict(S1=False, S2=False, S3=False)
+    DEFAULT_BEAM_BLOCKER_SLITS = dict(S1=False, S2=False, S3=True)
+    MIN_SLIT_GAPS_H = dict(S1=0.5, S2=0.5, S3=0.5)
+    MIN_SLIT_GAPS_V = dict(S1=0.0, S2=0.0, S3=0.0)
+    MAX_SLIT_GAPS_NR = dict(S1=40, S2=40, S3=120)
+    MAX_SLIT_GAPS_PNR = dict(S1=10, S2=40, S3=120)
+    MAX_SLIT_GAPS_PA = dict(S1=10, S2=40, S3=10)
+    MAX_SLIT_GAPS_PA_OFFSPEC = dict(S1=10, S2=40, S3=40)
+
+    MAX_SLIT_GAPS = {"NR": MAX_SLIT_GAPS_NR,
+                     "PNR": MAX_SLIT_GAPS_PNR,
+                     "PA": MAX_SLIT_GAPS_PA,
+                     "PA OFFSPEC": MAX_SLIT_GAPS_PA_OFFSPEC}
+
+    def __init__(self, dry_run, pol_mode="NR"):
+        # not sure if I should be using super() instead
+        InstrumentBase.__init__(self, dry_run)
 
         self.vmode = self.is_in_vmode()
+        self.pol_mode = pol_mode
+        self.default_slit_widths = self.DEFAULT_SLIT_WIDTHS
+        self.slit_aliases = self.SLIT_ALIASES
+
+        # TODO: need to work out how to pass through the polarisation option
+        #  and v_mode.
+        self.max_slit_gaps, self.min_slit_gaps = self._select_min_max_slit_gaps()
 
     @staticmethod
     def is_in_vmode():
@@ -127,6 +188,24 @@ class PolrefInstrument(Instrument, PolarisedInstrumentBase):
             return True
         else:
             return False
+
+    def _select_min_max_slit_gaps(self):
+        """
+        POLREF specific method to grab the minimum and maximum size slit gaps
+        that should be used on POLREF.
+
+        This is required, since POLREF's slit requirments depend on mode
+        (Polarisation and sample orientation - vertical or horizontal)
+        """
+
+        if self.vmode:
+            min_slit_gaps = self.MIN_SLIT_GAPS_V
+        else:
+            min_slit_gaps = self.MIN_SLIT_GAPS_H
+
+        max_slit_gaps = self.MAX_SLIT_GAPS_NR.get(self.pol_mode)
+
+        return max_slit_gaps, min_slit_gaps
 
     def set_collimation_gaps(self, gap_settings):
 
@@ -184,6 +263,8 @@ class PolrefInstrument(Instrument, PolarisedInstrumentBase):
 
         self.flipper("dd")
         self.hardperiods_pnr(uframes, dframes)
+        # TODO: could assign slit setting defaults for pnr mode here?
+        #  Including, max/min limits, disabling scaling of certain slits - e.g. s3 etc.
         pass
 
 
@@ -191,7 +272,9 @@ class PolrefInstrument(Instrument, PolarisedInstrumentBase):
 #  which could be RunAngle type specific, to the instrument
 #  instantiaion. **kwargs may be best in conjunction
 #  with hasattr statements
-def init_instrument(dry_run, manual_instrument_override=None):
+def init_instrument(dry_run,
+                    manual_instrument_override=None,
+                    measurement_mode=None):
     """
     Grabs instrument from IBEX (using the config?)
     and instantiates correct instrument class.
@@ -214,7 +297,8 @@ def init_instrument(dry_run, manual_instrument_override=None):
     if instrument_name == "INTER":
         instrument = InterInstrument(dry_run=dry_run)
     elif instrument_name == "POLREF":
-        instrument = PolrefInstrument(dry_run=dry_run)
+        # TODO: find better way of passing back instrument mode.
+        instrument = PolrefInstrument(dry_run=dry_run, pol_mode=measurement_mode)
     else:
         instrument = Instrument(dry_run=dry_run)
 

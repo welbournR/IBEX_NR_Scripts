@@ -79,6 +79,9 @@ class Instrument(InstrumentBase):
     SLIT_ALIASES = None
     DEFAULT_SLIT_WIDTHS = None
     DEFAULT_DISABLE_SLIT_SCALE_SETTINGS = None
+    # Defines a dict of a pair of slits that will be used to define the
+    # incident resolution and footprint.
+    COLLIMATION_SLIT_PAIR = None
     # Defines dict of slits and if they are designated as a beam blocker or not.
     # If defined as a beam blocker slit, when values are provided to drive both
     # blades, the set_beam_blocker() method will be called on those slits.

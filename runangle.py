@@ -130,16 +130,20 @@ class RunAngleBase:
                 maximum_opening = self.instrument.max_slit_gaps[slit]
                 minimum_opening = self.instrument.min_slit_gaps[slit]
 
-                if hasattr(self.col_slits[slit], "__len__"):
-                    slit_list = []
-                    for slit_value in self.col_slits[slit]:
-                        # divide max/min by 2 as this is to set the slit blade not the gap
-                        slit_list.append(self._scale_slit(angle, slit, slit_value,
-                                                          minimum_opening/2, maximum_opening/2))
-                    slit_settings[slit] = slit_list
-                else:
-                    slit_settings[slit] = self._scale_slit(angle, slit, self.col_slits[slit],
-                                                           minimum_opening, maximum_opening)
+                # check to see if we want to scale the slits
+                # TODO: this option should be able to be overwritten if required.
+                #  We should be calling a class attribute rather than class global.
+                if not self.instrument.DEFAULT_DISABLE_SLIT_SCALE_SETTINGS[slit]:
+                    if hasattr(self.col_slits[slit], "__len__"):
+                        slit_list = []
+                        for slit_value in self.col_slits[slit]:
+                            # divide max/min by 2 as this is to set the slit blade not the gap
+                            slit_list.append(self._scale_slit(angle, slit, slit_value,
+                                                              minimum_opening/2, maximum_opening/2))
+                        slit_settings[slit] = slit_list
+                    else:
+                        slit_settings[slit] = self._scale_slit(angle, slit, self.col_slits[slit],
+                                                               minimum_opening, maximum_opening)
 
         if self.footprint is None:
             footprint = self.sample.footprint
@@ -148,7 +152,20 @@ class RunAngleBase:
         # TODO: add sample_length to sample class
         # sample_length = self.sample.sample_length
         # TODO: finish writing slit calculator
+        # TODO: for sample_length inclusion, use an inequality - i.e.
+        #  if footprint > sample_length:
+        #      work out S1 using S1Sample and desired resolution
+        #  S2 in this case can just be used to set the overilluminated footprint
+        #  and should have no effect on the resolution.
+        # TODO: work out default and override behaviour for the non-collimation defining slits
+        #  e.g. S3 and S4 are XXX % larger than required for desired footprint and resolution.
+        #  Additionally, how do we get the
         # TODO: should return at least first two collimation slits e.g. S1 S2
+        # TODO: how to deal with other slits that should not be defining the collimation?
+        # TODO: how do we specify which slits are our collimation pair?
+        #  Generally this will be S1, S2. But for some beamlines with additional slits,
+        #  this may be a different selection. We would also need to marry this up with the
+        #  slit positions relative to each other and the sample.
         return slit_settings
 
     def _divergence_calc(self, a1, a2, x):
